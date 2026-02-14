@@ -12,7 +12,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user_teams = self.request.user.teams.all()
+        # Return tasks from projects the user is part of
+        user_teams = self.request.user.team_memberships.values_list('team', flat=True)
         projects = Project.objects.filter(team__in=user_teams)
         return Task.objects.filter(project__in=projects)
 
@@ -32,6 +33,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         if not isinstance(user_ids, list):
             return Response({'error': 'user_ids must be a list'}, status=status.HTTP_400_BAD_REQUEST)
         users = CustomUser.objects.filter(id__in=user_ids)
+        # Ensure all users are in the same team
         team = task.project.team
         valid_users = [u for u in users if team.memberships.filter(user=u).exists()]
         task.assigned_to.add(*valid_users)
