@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from accounts.models import User
+from accounts.models import CustomUser
 from .models import Team, TeamMember
 from .serializers import TeamSerializer, TeamMemberSerializer
 
@@ -12,7 +12,7 @@ class TeamViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return self.request.user.teams.all()
+        return Team.objects.filter(memberships__user=self.request.user)
     def perform_create(self, serializer):
         serializer.save()
 
@@ -29,8 +29,8 @@ class TeamViewSet(viewsets.ModelViewSet):
             user_id = request.data.get('user_id')
             role = request.data.get('role', 'MEMBER')
             try:
-                user = User.objects.get(id=user_id)
-            except User.DoesNotExist:
+                user = CustomUser.objects.get(id=user_id)
+            except CustomUser.DoesNotExist:
                 return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             if team.memberships.filter(user=user).exists():
                 return Response({'error': 'User already in team'}, status=status.HTTP_400_BAD_REQUEST)

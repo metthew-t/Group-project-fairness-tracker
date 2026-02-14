@@ -3,6 +3,7 @@ from django.db import models
 
 class CustomUser(AbstractUser):
     
+    teams = models.ManyToManyField('teams.Team', through='teams.TeamMember', related_name='users')
     bio = models.TextField(max_length=500, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     email_verified = models.BooleanField(default=False)
