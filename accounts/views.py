@@ -1,3 +1,4 @@
+from rest_framework import generics, permissions, status
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from .serializers import RegisterSerializer
@@ -13,7 +14,7 @@ class RegisterView(generics.CreateAPIView):
         return Response({
             "user": RegisterSerializer(user).data,
             "message": "User created successfully",
-        })
+        }, status=status.HTTP_201_CREATED)
     
 
 from rest_framework.views import APIView
