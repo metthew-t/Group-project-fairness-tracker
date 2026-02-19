@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'contributions',
     'analytics',
     'notifications',
+    'django_rest_passwordreset',
 ]
 
 MIDDLEWARE = [
