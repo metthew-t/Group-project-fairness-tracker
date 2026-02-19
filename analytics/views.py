@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from .models import TeamAnalytics
 from .serializers import TeamAnalyticsSerializer
 from .utils import calculate_team_analytics
-from teams.models import Team
+from teams.models import Team, TeamMember  # <-- import TeamMember
 from projects.models import Project
 
 class TeamAnalyticsViewSet(viewsets.GenericViewSet):
@@ -13,13 +13,15 @@ class TeamAnalyticsViewSet(viewsets.GenericViewSet):
     serializer_class = TeamAnalyticsSerializer
 
     def get_queryset(self):
-        return TeamAnalytics.objects.filter(team__members=self.request.user)
+        # Use memberships__user instead of members
+        return TeamAnalytics.objects.filter(team__memberships__user=self.request.user)
 
     def retrieve_team(self, request, team_id=None):
         team = get_object_or_404(Team, id=team_id)
-        if not team.members.filter(id=request.user.id).exists():
+        # Check membership via TeamMember
+        if not TeamMember.objects.filter(team=team, user=request.user).exists():
             return Response({'error': 'Not a member'}, status=status.HTTP_403_FORBIDDEN)
-        # Check if we have cached analytics for today
+        # Try to get cached analytics for today
         analytics = TeamAnalytics.objects.filter(team=team, project=None, date=date.today()).first()
         if not analytics:
             data = calculate_team_analytics(team)
@@ -29,7 +31,8 @@ class TeamAnalyticsViewSet(viewsets.GenericViewSet):
 
     def retrieve_project(self, request, project_id=None):
         project = get_object_or_404(Project, id=project_id)
-        if not project.team.members.filter(id=request.user.id).exists():
+        # Check membership via TeamMember
+        if not TeamMember.objects.filter(team=project.team, user=request.user).exists():
             return Response({'error': 'Not a member'}, status=status.HTTP_403_FORBIDDEN)
         analytics = TeamAnalytics.objects.filter(team=project.team, project=project, date=date.today()).first()
         if not analytics:
