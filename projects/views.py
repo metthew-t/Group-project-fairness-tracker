@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied  # <-- correct import
 from django.shortcuts import get_object_or_404
 from .models import Project
 from .serializers import ProjectSerializer
@@ -18,7 +19,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         team_id = self.request.data.get('team')
         team = get_object_or_404(Team, id=team_id)
         if not team.memberships.filter(user=self.request.user).exists():
-            raise permissions.PermissionDenied("You are not a member of this team.")
+            raise PermissionDenied("You are not a member of this team.")  # <-- fixed
         serializer.save(created_by=self.request.user)
 
     @action(detail=True, methods=['patch'], url_path='status')
