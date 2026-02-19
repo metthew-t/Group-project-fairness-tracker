@@ -12,11 +12,10 @@ def create_verification_notification(sender, instance, created, **kwargs):
             recipient=instance.contribution.user,
             message=message
         )
-        # If disputed, also notify team lead
+        # If disputed, also notify team leads
         if instance.decision == 'disputed':
-            # Find team lead(s) for the team
             team = instance.contribution.task.project.team
-            leads = team.membership_set.filter(role='lead').values_list('user', flat=True)
+            leads = team.memberships.filter(role='LEAD').values_list('user', flat=True)  # uppercase LEAD
             for lead_id in leads:
                 if lead_id != instance.contribution.user.id:  # avoid duplicate if lead is also contributor
                     Notification.objects.create(
