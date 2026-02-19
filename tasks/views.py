@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied  # <-- correct import
 from django.shortcuts import get_object_or_404
 from .models import Task
 from .serializers import TaskSerializer
@@ -21,7 +22,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         project_id = self.request.data.get('project')
         project = get_object_or_404(Project, id=project_id)
         if not project.team.memberships.filter(user=self.request.user).exists():
-            raise permissions.PermissionDenied("You are not a member of this team.")
+            raise PermissionDenied("You are not a member of this team.")  # <-- fixed
         serializer.save(created_by=self.request.user)
 
     @action(detail=True, methods=['post'], url_path='assign')
