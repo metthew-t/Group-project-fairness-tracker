@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from .models import Contribution, Verification
 from .serializers import ContributionSerializer, VerificationSerializer
@@ -15,15 +16,34 @@ class ContributionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Only show contributions from tasks that belong to teams the user is in
         user = self.request.user
-        return Contribution.objects.filter(task__project__team__members=user)
+        return Contribution.objects.filter(
+            task__project__team__memberships__user=user
+        ).distinct()
 
     def perform_create(self, serializer):
         # Ensure the user is a member of the team that owns the task
         task_id = self.request.data.get('task')
         task = get_object_or_404(Task, id=task_id)
         if not TeamMember.objects.filter(team=task.project.team, user=self.request.user).exists():
-            raise permissions.PermissionDenied("You are not a member of this team.")
+            raise PermissionDenied("You are not a member of this team.")
         serializer.save(user=self.request.user, status='pending')
+
+    def perform_update(self, serializer):
+        # Only allow update if contribution is pending and user is owner
+        contribution = self.get_object()
+        if contribution.user != self.request.user:
+            raise PermissionDenied("You can only update your own contributions.")
+        if contribution.status != 'pending':
+            raise PermissionDenied("Only pending contributions can be updated.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Only allow delete if contribution is pending and user is owner
+        if instance.user != self.request.user:
+            raise PermissionDenied("You can only delete your own contributions.")
+        if instance.status != 'pending':
+            raise PermissionDenied("Only pending contributions can be deleted.")
+        instance.delete()
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def verify(self, request, pk=None):
