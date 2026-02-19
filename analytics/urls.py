@@ -1,10 +1,7 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import AnalyticsViewSet
-
-router = DefaultRouter()
-router.register(r'analytics', AnalyticsViewSet, basename='analytics')
+from django.urls import path
+from .views import TeamAnalyticsViewSet
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('teams/<int:team_id>/analytics/', TeamAnalyticsViewSet.as_view({'get': 'retrieve_team'}), name='team-analytics'),
+    path('projects/<int:project_id>/analytics/', TeamAnalyticsViewSet.as_view({'get': 'retrieve_project'}), name='project-analytics'),
 ]
