@@ -1,7 +1,5 @@
 from collections import defaultdict
 from contributions.models import Contribution
-from projects.models import Project
-from teams.models import Team
 from accounts.models import CustomUser
 
 def calculate_team_analytics(team, project=None):

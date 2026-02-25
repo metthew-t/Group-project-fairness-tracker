@@ -11,4 +11,6 @@ urlpatterns = [
     path('api/analytics/', include('analytics.urls')),
     path('api/notifications/', include('notifications.urls')),
     path('api/auth/password-reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]

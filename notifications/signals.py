@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from contributions.models import Verification, Contribution
+from contributions.models import Verification
 from .models import Notification
 
 @receiver(post_save, sender=Verification)
