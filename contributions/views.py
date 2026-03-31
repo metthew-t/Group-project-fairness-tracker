@@ -7,6 +7,7 @@ from .models import Contribution, Verification
 from .serializers import ContributionSerializer, VerificationSerializer
 from teams.models import TeamMember
 from tasks.models import Task
+from notifications.utils import send_progress_email
 
 class ContributionViewSet(viewsets.ModelViewSet):
     queryset = Contribution.objects.all()
@@ -14,8 +15,11 @@ class ContributionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Only show contributions from tasks that belong to teams the user is in
         user = self.request.user
+        if user.user_type == 'INSTRUCTOR':
+            # Instructors see contributions for projects they administer
+            return Contribution.objects.filter(task__project__administrator=user).distinct()
+        # Members and Leads see contributions from teams they are in
         return Contribution.objects.filter(
             task__project__team__memberships__user=user
         ).distinct()
@@ -68,7 +72,7 @@ class ContributionViewSet(viewsets.ModelViewSet):
     def lead_action(self, request, pk=None):
         contribution = self.get_object()
         # Check if user is team lead
-        if not TeamMember.objects.filter(team=contribution.task.project.team, user=request.user, role='lead').exists():
+        if not TeamMember.objects.filter(team=contribution.task.project.team, user=request.user, role='LEAD').exists():
             return Response({"error": "Only team lead can perform this action."}, status=403)
         decision = request.data.get('decision')
         if decision not in ['approved', 'rejected']:
@@ -82,4 +86,13 @@ class ContributionViewSet(viewsets.ModelViewSet):
             decision=decision,
             comments=request.data.get('comments', '')
         )
+
+        # Update Task Progress and Send Email on Approval
+        if decision == 'approved':
+            task = contribution.task
+            # Increment progress by 10% on each approved contribution (simple mock logic)
+            task.progress = min(100, task.progress + 10)
+            task.save()
+            send_progress_email(contribution.user, task, task.progress)
+
         return Response({"status": f"Contribution {decision}"})

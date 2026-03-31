@@ -1,0 +1,50 @@
+/* ===== DASHBOARD CSS ===== */
+.dashboard { display: flex; flex-direction: column; gap: 28px; animation: fadeIn 0.4s ease; }
+
+.dashboard-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dashboard-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.dashboard-stats .stat-card {
+  cursor: pointer;
+  border: 1px solid rgba(var(--card-color-rgb, 99,102,241), 0.1);
+}
+.dashboard-stats .stat-card:hover {
+  border-color: var(--card-color, var(--primary-500));
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4), 0 0 0 1px var(--card-color, var(--primary-500));
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+/* Notif list */
+.notif-list { display: flex; flex-direction: column; }
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: var(--transition-fast);
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(59,130,246,0.04); }
+.notif-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  flex-shrink: 0;
+  margin-top: 6px;
+  box-shadow: 0 0 6px rgba(59,130,246,0.6);
+}

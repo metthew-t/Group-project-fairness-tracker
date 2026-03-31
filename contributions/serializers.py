@@ -6,6 +6,8 @@ from tasks.serializers import TaskSerializer   # assuming Task model is in tasks
 class ContributionSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
     task_details = TaskSerializer(source='task', read_only=True)
+    username = serializers.ReadOnlyField(source='user.username')
+    task_title = serializers.ReadOnlyField(source='task.title')
 
     class Meta:
         model = Contribution

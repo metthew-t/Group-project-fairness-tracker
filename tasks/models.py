@@ -13,6 +13,7 @@ class Task(models.Model):
         ('TODO', 'To Do'),
         ('IN_PROGRESS', 'In Progress'),
         ('COMPLETED', 'Completed'),
+        ('BLOCKED', 'Blocked'),
     ]
 
     title = models.CharField(max_length=200)
@@ -27,6 +28,7 @@ class Task(models.Model):
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_tasks')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    progress = models.IntegerField(default=0, help_text="Completion percentage 0-100")
 
     def __str__(self):
         return self.title

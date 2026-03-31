@@ -24,5 +24,6 @@ class TeamSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         validated_data['created_by'] = request.user
         team = super().create(validated_data)
-        TeamMember.objects.create(team=team, user=request.user, role='LEAD')
+        role = 'LEAD' if request.user.user_type == 'TEAM_LEAD' else 'MEMBER'
+        TeamMember.objects.create(team=team, user=request.user, role=role)
         return team

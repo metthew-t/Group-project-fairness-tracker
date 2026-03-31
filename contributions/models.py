@@ -5,12 +5,12 @@ from tasks.models import Task
 
 class Contribution(models.Model):
     WORK_TYPES = [
-        ('coding', 'Coding'),
-        ('research', 'Research'),
-        ('design', 'Design'),
-        ('documentation', 'Documentation'),
-        ('testing', 'Testing'),
-        ('presentation', 'Presentation'),
+        ('Coding', 'Coding'),
+        ('Research', 'Research'),
+        ('Design', 'Design'),
+        ('Documentation', 'Documentation'),
+        ('Testing', 'Testing'),
+        ('Presentation', 'Presentation'),
     ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -31,6 +31,7 @@ class Contribution(models.Model):
         validators=[FileExtensionValidator(allowed_extensions=['jpg','jpeg','png','pdf','doc','docx'])]
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    file_upload = models.FileField(upload_to='contributions/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

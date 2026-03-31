@@ -13,23 +13,26 @@ class TaskViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        user = self.request.user
+        if user.user_type == 'INSTRUCTOR':
+            return Task.objects.filter(project__administrator=user)
         # Return tasks from projects the user is part of
-        user_teams = self.request.user.team_memberships.values_list('team', flat=True)
+        user_teams = user.team_memberships.values_list('team', flat=True)
         projects = Project.objects.filter(team__in=user_teams)
         return Task.objects.filter(project__in=projects)
 
     def perform_create(self, serializer):
         project_id = self.request.data.get('project')
         project = get_object_or_404(Project, id=project_id)
-        if not project.team.memberships.filter(user=self.request.user).exists():
-            raise PermissionDenied("You are not a member of this team.")  # <-- fixed
+        if not project.team.memberships.filter(user=self.request.user, role='LEAD').exists():
+            raise PermissionDenied("Only Team Leads can create tasks.")
         serializer.save(created_by=self.request.user)
 
     @action(detail=True, methods=['post'], url_path='assign')
     def assign_users(self, request, pk=None):
         task = self.get_object()
-        if not task.project.team.memberships.filter(user=request.user).exists():
-            return Response({'error': 'Not a team member'}, status=status.HTTP_403_FORBIDDEN)
+        if not task.project.team.memberships.filter(user=request.user, role='LEAD').exists():
+            return Response({'error': 'Only Team Leads can assign users'}, status=status.HTTP_403_FORBIDDEN)
         user_ids = request.data.get('user_ids', [])
         if not isinstance(user_ids, list):
             return Response({'error': 'user_ids must be a list'}, status=status.HTTP_400_BAD_REQUEST)
@@ -41,11 +44,31 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(task)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='contribute')
+    def log_contribution(self, request, pk=None):
+        task = self.get_object()
+        from contributions.serializers import ContributionSerializer
+        if not task.project.team.memberships.filter(user=request.user).exists():
+            return Response({'error': 'Not a team member'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = ContributionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task, user=request.user, status='pending')
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='verify')
+    def verify_contribution(self, request, pk=None):
+        contribution_id = request.data.get('contribution_id')
+        from contributions.models import Contribution
+        contribution = get_object_or_404(Contribution, id=contribution_id, task_id=pk)
+        return Response({'message': 'Delegated to contributions API recommended'}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'], url_path='unassign')
     def unassign_users(self, request, pk=None):
         task = self.get_object()
-        if not task.project.team.memberships.filter(user=request.user).exists():
-            return Response({'error': 'Not a team member'}, status=status.HTTP_403_FORBIDDEN)
+        if not task.project.team.memberships.filter(user=request.user, role='LEAD').exists():
+            return Response({'error': 'Only Team Leads can unassign users'}, status=status.HTTP_403_FORBIDDEN)
         user_ids = request.data.get('user_ids', [])
         if not isinstance(user_ids, list):
             return Response({'error': 'user_ids must be a list'}, status=status.HTTP_400_BAD_REQUEST)

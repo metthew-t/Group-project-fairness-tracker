@@ -14,7 +14,11 @@ class TeamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Team.objects.filter(memberships__user=self.request.user)
     def perform_create(self, serializer):
-        serializer.save()
+        from rest_framework.exceptions import PermissionDenied
+        user = self.request.user
+        if user.user_type not in ['TEAM_LEAD', 'INSTRUCTOR']:
+            raise PermissionDenied(f"Access Denied: Your current role is {user.user_type}. Only Team Leads or Instructors can create teams.")
+        serializer.save(created_by=user)
 
     @action(detail=True, methods=['get', 'post'], url_path='members')
     def members(self, request, pk=None):
@@ -47,10 +51,23 @@ class TeamViewSet(viewsets.ModelViewSet):
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['post'], url_path='join/(?P<code>[^/.]+)')
-    def join_by_code(self, request, code=None):
+    @action(detail=False, methods=['post'], url_path='join')
+    def join_by_code(self, request):
+        code = request.data.get('join_code')
+        if not code:
+            return Response({'error': 'Join code required'}, status=status.HTTP_400_BAD_REQUEST)
         team = get_object_or_404(Team, join_code=code)
         if team.memberships.filter(user=request.user).exists():
-            return Response({'error': 'Already a member'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Already a member of this team'}, status=status.HTTP_400_BAD_REQUEST)
         TeamMember.objects.create(team=team, user=request.user, role='MEMBER')
-        return Response({'message': 'Joined successfully'}, status=status.HTTP_200_OK)
+        return Response({'message': f'Successfully joined {team.name}'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='members/(?P<user_id>[^/.]+)/promote')
+    def promote_member(self, request, pk=None, user_id=None):
+        team = self.get_object()
+        if not team.memberships.filter(user=request.user, role='LEAD').exists():
+            return Response({'error': 'Only team leads can promote members'}, status=status.HTTP_403_FORBIDDEN)
+        member = get_object_or_404(TeamMember, team=team, user_id=user_id)
+        member.role = 'LEAD'
+        member.save()
+        return Response({'message': f'{member.user.username} promoted to Lead'})
