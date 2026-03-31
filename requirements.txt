@@ -13,3 +13,9 @@ tzdata==2025.3
 drf-spectacular
 gunicorn
 drf-spectacular-sidecar
+dj-database-url
+whitenoise
+psycopg2-binary
+channels
+daphne
+channels_redis
